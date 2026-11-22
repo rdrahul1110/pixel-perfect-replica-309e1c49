@@ -30,6 +30,7 @@ import {
   type Scenario,
   type Stance,
 } from "@/lib/nimbus";
+import { type BackendPortfolioResponse } from "@/lib/api";
 
 export const RiskIcon = ({ category, size = 14 }: { category: string; size?: number }) => {
   const Icon =
@@ -77,6 +78,7 @@ export function Exposure({
   budget,
   stance,
   scenario,
+  backendData,
   onPlanner,
   onAudit,
   onExcel,
@@ -84,11 +86,21 @@ export function Exposure({
   budget: number;
   stance: Stance;
   scenario: Scenario;
+  backendData?: BackendPortfolioResponse | null;
   onPlanner: () => void;
   onAudit: () => void;
   onExcel: () => void;
 }) {
-  const plan = allocate(budget, stance, scenario);
+  const scenarioKey =
+    scenario === "2026 Baseline"
+      ? "today"
+      : scenario === "2040 Trajectory"
+        ? "2040_current"
+        : "2040_net_zero";
+  const liveGross = backendData
+    ? Math.round(backendData.portfolio_summary.annual_exposure_cr[scenarioKey])
+    : (scenario === "2026 Baseline" ? 688 : scenario === "2040 Trajectory" ? 1515 : 2655);
+  const plan = allocate(budget, stance, scenario, liveGross);
   const [filter, setFilter] = useState("All");
   const [sort, setSort] = useState("id");
   const [selected, setSelected] = useState<Plant | null>(null);
@@ -101,6 +113,10 @@ export function Exposure({
     )
     .sort((a, b) => (sort === "risk" ? b.risk - a.risk : a.id.localeCompare(b.id)));
   const scale = plan.gross / 2655;
+  const liveCarbonPenalty = backendData
+    ? Math.round(backendData.portfolio_summary.carbon_penalties_cr[scenarioKey])
+    : (scenario === "2026 Baseline" ? 271 : Math.round(1623 * scale));
+  const totalRevenue = backendData?.portfolio_summary.total_revenue_cr ?? 8660;
   return (
     <>
       <div className="page-heading">
@@ -130,7 +146,7 @@ export function Exposure({
           <p className="kpi-desc">
             +{Math.round((plan.gross / 688 - 1) * 100)}% vs ₹688 Cr today
             <br />
-            {((plan.gross / 8800) * 100).toFixed(1)}% revenue-equivalent exposure
+            {((plan.gross / totalRevenue) * 100).toFixed(1)}% revenue-equivalent exposure
           </p>
           <div className="kpi-bottom">
             <span className="badge critical">
@@ -146,7 +162,8 @@ export function Exposure({
             <Leaf size={16} className="kpi-icon" />
           </div>
           <div className="kpi-value">
-            ₹271<small>Cr / yr</small>
+            {money(liveCarbonPenalty)}
+            <small>Cr / yr</small>
           </div>
           <p className="kpi-desc">
             BEE deficit: 0.77 t/t vs 0.65 t/t cap
@@ -227,11 +244,16 @@ export function Exposure({
               + {money(plan.gross)} <span>Cr / yr</span>
             </div>
             <div className="mini-breakdown">
-              {[1623, 436, 257, 224, 115].map((v, i) => (
-                <span className="legend-item" key={i}>
-                  <span className={`legend-dot ${riskCategories[i]?.key}`} />
-                  {["Carbon", "Water", "Flood", "Heat", "Cascade"][i]}{" "}
-                  {money(Math.round(v * scale))}
+              {[
+                { name: "Carbon", key: "carbon", val: backendData ? Math.round(backendData.portfolio_summary.carbon_penalties_cr[scenarioKey]) : Math.round(1623 * scale) },
+                { name: "Water", key: "water", val: backendData ? Math.round(backendData.portfolio_summary.water_revenue_loss_cr[scenarioKey]) : Math.round(436 * scale) },
+                { name: "Flood", key: "flood", val: backendData ? Math.round(backendData.portfolio_summary.flood_cyclone_loss_cr[scenarioKey]) : Math.round(257 * scale) },
+                { name: "Heat", key: "heat", val: backendData ? Math.round(backendData.portfolio_summary.heat_revenue_loss_cr[scenarioKey]) : Math.round(224 * scale) },
+                { name: "Cascade", key: "cascade", val: backendData ? Math.round(backendData.portfolio_summary.cascade_revenue_loss_cr[scenarioKey]) : Math.round(115 * scale) },
+              ].map((item) => (
+                <span className="legend-item" key={item.key}>
+                  <span className={`legend-dot ${item.key}`} />
+                  {item.name} {money(item.val)}
                 </span>
               ))}
             </div>

@@ -42,8 +42,9 @@ export const projects = [
   },
 ] as const;
 export type Project = (typeof projects)[number];
-export const grossFor = (scenario: Scenario) =>
-  scenario === "2026 Baseline" ? 688 : scenario === "2040 Trajectory" ? 1940 : 2655;
+export const grossFor = (scenario: Scenario, overrideGross?: number) =>
+  overrideGross ??
+  (scenario === "2026 Baseline" ? 688 : scenario === "2040 Trajectory" ? 1515 : 2655);
 export function portfolios(stance: Stance = "balanced", scenario: Scenario = "2040 Net Zero") {
   const scale = grossFor(scenario) / 2655;
   return Array.from({ length: 8 }, (_, mask) => {
@@ -75,6 +76,7 @@ export function allocate(
   budget: number,
   stance: Stance = "balanced",
   scenario: Scenario = "2040 Net Zero",
+  overrideGross?: number,
 ) {
   const options = portfolios(stance, scenario);
   const best =
@@ -83,9 +85,10 @@ export function allocate(
       .sort((a, b) => b.score - a.score || a.cost - b.cost)[0] ?? options[0];
   if (!best) throw new Error("Missing empty portfolio");
   const deferred = projects.filter((p) => !best.funded.includes(p));
+  const currentGross = grossFor(scenario, overrideGross);
   const mitigated = Math.round(
     (deferred.reduce((sum, p) => sum + (p.id === "P1" ? 320 : p.id === "P2" ? 120 : 80), 0) *
-      grossFor(scenario)) /
+      currentGross) /
       2655,
   );
   const next = options
@@ -95,10 +98,10 @@ export function allocate(
     ...best,
     deferred,
     idle: budget - best.cost,
-    gross: grossFor(scenario),
-    residual: grossFor(scenario) - best.retired,
+    gross: currentGross,
+    residual: currentGross - best.retired,
     mitigated,
-    net: grossFor(scenario) - best.retired - mitigated,
+    net: currentGross - best.retired - mitigated,
     next,
   };
 }

@@ -286,6 +286,7 @@ function NimbusCockpit() {
             budget={budget}
             stance={stance}
             scenario={scenario}
+            backendData={syncStatus.data}
             onPlanner={toPlanner}
             onAudit={() => setModal("audit")}
             onExcel={() => void excel()}
@@ -522,21 +523,32 @@ function NimbusCockpit() {
           )}
           {modal === "notifications" && (
             <>
-              <div className="eyebrow">Risk signals</div>
-              <DialogTitle>Three items need attention</DialogTitle>
-              <DialogDescription>Nimbus Cement · Latest scenario assessment</DialogDescription>
-              <div className="notice">
-                <b>P07 · Clinker buffer below policy floor</b>
-                <p>7 days actual cover vs 10 days policy minimum.</p>
-              </div>
-              <div className="notice">
-                <b>P01 · Carbon compliance watchlist</b>
-                <p>0.95 t/t emissions intensity. Review solar and waste heat recovery funding.</p>
-              </div>
-              <div className="notice">
-                <b>P04 · Groundwater shutdown risk</b>
-                <p>28-day modelled shutdown. Plant continuity measures need review.</p>
-              </div>
+              <div className="eyebrow">Risk signals & Executive Takeaways</div>
+              <DialogTitle>Oracle n8n Intelligence Alerts</DialogTitle>
+              <DialogDescription>Nimbus Cement · Live calculated scenario assessment</DialogDescription>
+              {syncStatus.data?.executive_takeaways?.length ? (
+                syncStatus.data.executive_takeaways.map((takeaway, idx) => (
+                  <div className="notice" key={idx}>
+                    <b>Alert {idx + 1}</b>
+                    <p>{takeaway}</p>
+                  </div>
+                ))
+              ) : (
+                <>
+                  <div className="notice">
+                    <b>P07 · Clinker buffer below policy floor</b>
+                    <p>7 days actual cover vs 10 days policy minimum.</p>
+                  </div>
+                  <div className="notice">
+                    <b>P01 · Carbon compliance watchlist</b>
+                    <p>0.95 t/t emissions intensity. Review solar and waste heat recovery funding.</p>
+                  </div>
+                  <div className="notice">
+                    <b>P04 · Groundwater shutdown risk</b>
+                    <p>28-day modelled shutdown. Plant continuity measures need review.</p>
+                  </div>
+                </>
+              )}
               <Button
                 onClick={() => {
                   setModal(null);
