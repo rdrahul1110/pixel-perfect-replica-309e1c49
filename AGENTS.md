@@ -28,3 +28,9 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Application rules
+- Keep prototype climate data and the exhaustive eight-portfolio allocation engine in a browser-safe domain module so every view shares the same calculations.
+- Keep decisions in React session state for this prototype; do not imply that exported resolutions have been saved to a shared or audited system.
+- Generate Excel and PDF exports dynamically in the browser so document packages do not enter server execution.
+- Use the global stylesheet's semantic tokens for risk categories and cockpit layouts to preserve the supplied design system.

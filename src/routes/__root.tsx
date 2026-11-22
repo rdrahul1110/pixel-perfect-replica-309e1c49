@@ -81,14 +81,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Nimbus | Climate Risk & Capital Cockpit" },
+      {
+        name: "description",
+        content:
+          "Nimbus Cement's climate exposure, capital allocation and benefits realisation cockpit.",
+      },
+      { property: "og:title", content: "Nimbus | Climate Risk & Capital Cockpit" },
+      {
+        property: "og:description",
+        content: "Climate exposure and capital decisions for Nimbus Cement's nine plants.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -96,6 +101,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Lato:wght@400;600;700;900&display=swap",
+      },
     ],
   }),
   shellComponent: RootShell,
