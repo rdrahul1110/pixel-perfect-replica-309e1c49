@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowDownToLine,
   ArrowRight,
@@ -13,6 +13,8 @@ import {
   LockKeyhole,
   ShieldCheck,
   BriefcaseBusiness,
+  Activity,
+  Server,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -21,6 +23,7 @@ import { Decide } from "@/components/nimbus-decide";
 import { Ledger } from "@/components/nimbus-ledger";
 import { allocate, money, portfolios, type Scenario, type Stance } from "@/lib/nimbus";
 import { exportExcel, exportResolution } from "@/lib/nimbus-exports";
+import { syncWithBackend, type SyncStatus, BACKEND_ENDPOINT } from "@/lib/api";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -51,11 +54,43 @@ function NimbusCockpit() {
   const [scenario, setScenario] = useState<Scenario>("2040 Net Zero");
   const [persona, setPersona] = useState("Meera (ESG Head)");
   const [modal, setModal] = useState<
-    "audit" | "compare" | "math" | "lock" | "notifications" | null
+    "audit" | "compare" | "math" | "lock" | "notifications" | "backend" | null
   >(null);
   const [locked, setLocked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>({
+    state: "idle",
+    endpoint: BACKEND_ENDPOINT,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    setSyncStatus((prev) => ({ ...prev, state: "syncing" }));
+    syncWithBackend(scenario, budget, stance).then(({ data, latencyMs, error }) => {
+      if (!isMounted) return;
+      if (data) {
+        setSyncStatus({
+          state: "connected",
+          latencyMs,
+          lastSync: new Date(),
+          endpoint: BACKEND_ENDPOINT,
+          data,
+        });
+      } else {
+        setSyncStatus({
+          state: "fallback",
+          latencyMs,
+          endpoint: BACKEND_ENDPOINT,
+          error,
+        });
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [scenario, budget, stance]);
+
   const p = allocate(budget, stance, scenario);
   const updateBudget = (value: number) => {
     setBudget(value);
@@ -178,15 +213,59 @@ function NimbusCockpit() {
               </Button>
             ))}
           </nav>
-          <div className="plan-chip">
-            <span className="status-dot" />
-            <span>
-              Plan:{" "}
-              <b>
-                {money(budget)} Cr {locked ? "Locked" : "Approved"}
-              </b>{" "}
-              &nbsp;|&nbsp; Residual: <b>{money(p.residual)} Cr / yr</b>
-            </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="backend-sync-btn"
+              onClick={() => setModal("backend")}
+              title="Click to view live Oracle Cloud n8n calculation engine status"
+              style={{
+                height: "28px",
+                padding: "0 10px",
+                fontSize: "11px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                borderRadius: "20px",
+                border: syncStatus.state === "connected" ? "1px solid #CEEAD6" : "1px solid #E2E8F0",
+                background: syncStatus.state === "connected" ? "#F0FDF4" : "#F8FAFC",
+                color: syncStatus.state === "connected" ? "#15803D" : "#64748B",
+              }}
+            >
+              <Server size={12} />
+              <span
+                style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  backgroundColor:
+                    syncStatus.state === "connected"
+                      ? "#16A34A"
+                      : syncStatus.state === "syncing"
+                        ? "#F59E0B"
+                        : "#94A3B8",
+                  display: "inline-block",
+                }}
+              />
+              <span>
+                {syncStatus.state === "connected"
+                  ? `n8n Engine: Live (${syncStatus.latencyMs}ms)`
+                  : syncStatus.state === "syncing"
+                    ? "Syncing Engine…"
+                    : "n8n Engine: Local Mode"}
+              </span>
+            </Button>
+            <div className="plan-chip">
+              <span className="status-dot" />
+              <span>
+                Plan:{" "}
+                <b>
+                  {money(budget)} Cr {locked ? "Locked" : "Approved"}
+                </b>{" "}
+                &nbsp;|&nbsp; Residual: <b>{money(p.residual)} Cr / yr</b>
+              </span>
+            </div>
           </div>
         </div>
       </header>
@@ -467,6 +546,64 @@ function NimbusCockpit() {
                 Review capital decision
                 <ArrowRight />
               </Button>
+            </>
+          )}
+          {modal === "backend" && (
+            <>
+              <div className="eyebrow">Enterprise Infrastructure</div>
+              <DialogTitle>Oracle Cloud n8n Calculation Engine</DialogTitle>
+              <DialogDescription>
+                Live calculation workflow master engine running on Oracle Cloud Infrastructure (OCI).
+              </DialogDescription>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
+                <div style={{ background: "#F8FAFC", padding: "14px", borderRadius: "8px", border: "1px solid #E2E8F0", fontSize: "13px", lineHeight: "1.6" }}>
+                  <div><b>Master Webhook:</b> <code style={{ color: "#0F766E", background: "#E6FFFA", padding: "2px 6px", borderRadius: "4px" }}>{BACKEND_ENDPOINT}</code></div>
+                  <div><b>Workflow ID:</b> <code>gn3yVZ55AFALdFbG</code> (Active on Oracle VM)</div>
+                  <div>
+                    <b>Engine Status:</b>{" "}
+                    <span style={{ color: syncStatus.state === "connected" ? "#16A34A" : "#D97706", fontWeight: 600 }}>
+                      {syncStatus.state === "connected" ? `🟢 Live & Connected (${syncStatus.latencyMs}ms)` : "○ Local Audit Engine Active"}
+                    </span>
+                  </div>
+                  {syncStatus.lastSync && (
+                    <div style={{ color: "#64748B", fontSize: "12px" }}>
+                      Last Synced: {syncStatus.lastSync.toLocaleTimeString()} · Method: POST (CORS enabled)
+                    </div>
+                  )}
+                  {syncStatus.error && (
+                    <div style={{ color: "#DC2626", fontSize: "11px", marginTop: "4px" }}>
+                      Note: {syncStatus.error}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div style={{ fontSize: "12px", fontWeight: 600, color: "#64748B", marginBottom: "6px" }}>
+                    LIVE CALCULATION PAYLOAD FROM N8N:
+                  </div>
+                  <pre style={{ maxHeight: "220px", overflowY: "auto", background: "#0F172A", color: "#38BDF8", padding: "12px", borderRadius: "8px", fontSize: "11px", fontFamily: "monospace" }}>
+                    {syncStatus.data ? JSON.stringify(syncStatus.data, null, 2) : "// Live backend query response available on connection."}
+                  </pre>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSyncStatus((prev) => ({ ...prev, state: "syncing" }));
+                    syncWithBackend(scenario, budget, stance).then(({ data, latencyMs, error }) => {
+                      if (data) {
+                        setSyncStatus({ state: "connected", latencyMs, lastSync: new Date(), endpoint: BACKEND_ENDPOINT, data });
+                      } else {
+                        setSyncStatus({ state: "fallback", latencyMs, endpoint: BACKEND_ENDPOINT, error });
+                      }
+                    });
+                  }}
+                >
+                  <Activity size={14} className="mr-1" />
+                  Re-test Engine
+                </Button>
+                <Button onClick={() => setModal(null)}>Close</Button>
+              </div>
             </>
           )}
         </DialogContent>
