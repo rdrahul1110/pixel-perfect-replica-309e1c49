@@ -581,6 +581,3 @@ export function Ledger({
     </>
   );
 }
-    </>
-  );
-}

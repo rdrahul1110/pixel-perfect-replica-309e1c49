@@ -82,7 +82,7 @@ function NimbusCockpit() {
     const stored = getStoredSnapshots();
     setSnapshots(stored);
     if (stored.length > 0) {
-      setLockedSnapshot(stored[0]);
+      setLockedSnapshot(stored[0] ?? null);
     }
   }, []);
 
@@ -104,7 +104,7 @@ function NimbusCockpit() {
           state: "fallback",
           latencyMs,
           endpoint: BACKEND_ENDPOINT,
-          error,
+          ...(error !== undefined ? { error } : {}),
         });
       }
     });
@@ -352,7 +352,7 @@ function NimbusCockpit() {
             budget={budget}
             stance={stance}
             scenario={scenario}
-            backendData={syncStatus.data}
+            backendData={syncStatus.data ?? null}
             onPlanner={toPlanner}
             onAudit={() => setModal("audit")}
             onExcel={() => void excel()}
@@ -693,7 +693,7 @@ function NimbusCockpit() {
                       if (data) {
                         setSyncStatus({ state: "connected", latencyMs, lastSync: new Date(), endpoint: BACKEND_ENDPOINT, data });
                       } else {
-                        setSyncStatus({ state: "fallback", latencyMs, endpoint: BACKEND_ENDPOINT, error });
+                        setSyncStatus({ state: "fallback", latencyMs, endpoint: BACKEND_ENDPOINT, ...(error !== undefined ? { error } : {}) });
                       }
                     });
                   }}
