@@ -7,6 +7,7 @@ import {
   Bell,
   CheckCircle2,
   ClipboardList,
+  FileSpreadsheet,
   FileText,
   Info,
   Leaf,
@@ -22,7 +23,7 @@ import { Exposure } from "@/components/nimbus-exposure";
 import { Decide } from "@/components/nimbus-decide";
 import { Ledger } from "@/components/nimbus-ledger";
 import { allocate, money, portfolios, type Scenario, type Stance } from "@/lib/nimbus";
-import { exportExcel, exportResolution } from "@/lib/nimbus-exports";
+import { exportExcel, exportResolution, exportBRSRAndIFRS } from "@/lib/nimbus-exports";
 import { syncWithBackend, type SyncStatus, BACKEND_ENDPOINT } from "@/lib/api";
 
 export const Route = createFileRoute("/")({
@@ -112,6 +113,18 @@ function NimbusCockpit() {
       setNotice("Excel workbook downloaded.");
     } catch {
       setNotice("The Excel download failed. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const brsrExport = async () => {
+    setBusy(true);
+    setNotice("");
+    try {
+      await exportBRSRAndIFRS(budget, stance, scenario);
+      setNotice("SEBI BRSR Principle 6 & IFRS S2 Statutory Filing Pack downloaded.");
+    } catch {
+      setNotice("The statutory filing export failed. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -312,6 +325,7 @@ function NimbusCockpit() {
             scenario={scenario}
             locked={locked}
             onExcel={() => void excel()}
+            onBRSR={() => void brsrExport()}
             onPlanner={toPlanner}
           />
         )}
@@ -515,10 +529,27 @@ function NimbusCockpit() {
                 only. Changing the envelope, stance or scenario reopens the decision. Formal
                 sign-off and shared record storage are not included in this prototype.
               </div>
-              <Button onClick={() => void lock()} disabled={busy}>
-                <LockKeyhole />
-                {busy ? "Preparing PDF…" : "Lock decision & download PDF"}
-              </Button>
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "16px" }}>
+                <Button onClick={() => void lock()} disabled={busy}>
+                  <LockKeyhole size={14} className="mr-1" />
+                  {busy ? "Preparing PDF…" : "Lock decision & download PDF"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => void brsrExport()}
+                  disabled={busy}
+                  style={{
+                    borderColor: "#0F766E",
+                    color: "#0F766E",
+                    backgroundColor: "#F0FDFA",
+                    fontWeight: 600,
+                  }}
+                  title="Download SEBI BRSR Principle 6 & IFRS S2 statutory compliance pack"
+                >
+                  <FileSpreadsheet size={14} className="mr-1 text-teal-700" />
+                  Download SEBI BRSR & IFRS S2 Pack
+                </Button>
+              </div>
             </>
           )}
           {modal === "notifications" && (

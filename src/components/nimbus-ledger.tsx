@@ -1,4 +1,4 @@
-import { ArrowDownToLine, CheckCircle2, ClipboardList, Info, LockKeyhole } from "lucide-react";
+import { ArrowDownToLine, CheckCircle2, ClipboardList, FileSpreadsheet, Info, LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { allocate, money, type Scenario, type Stance } from "@/lib/nimbus";
 export function Ledger({
@@ -7,6 +7,7 @@ export function Ledger({
   scenario,
   locked,
   onExcel,
+  onBRSR,
   onPlanner,
 }: {
   budget: number;
@@ -14,6 +15,7 @@ export function Ledger({
   scenario: Scenario;
   locked: boolean;
   onExcel: () => void;
+  onBRSR?: () => void;
   onPlanner: () => void;
 }) {
   const p = allocate(budget, stance, scenario);
@@ -29,10 +31,29 @@ export function Ledger({
             Quarterly capital deployment, delivery gates and realised climate benefits.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={onExcel}>
-          <ArrowDownToLine />
-          Export ledger
-        </Button>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+          <Button variant="outline" size="sm" onClick={onExcel}>
+            <ArrowDownToLine size={14} className="mr-1" />
+            Export ledger
+          </Button>
+          {onBRSR && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onBRSR}
+              style={{
+                borderColor: "#0F766E",
+                color: "#0F766E",
+                backgroundColor: "#F0FDFA",
+                fontWeight: 600,
+              }}
+              title="Download SEBI BRSR Principle 6 & IFRS S2 statutory compliance pack"
+            >
+              <FileSpreadsheet size={14} className="mr-1 text-teal-700" />
+              Export SEBI BRSR & IFRS S2
+            </Button>
+          )}
+        </div>
       </div>
       <div className="lock-banner">
         {locked ? <LockKeyhole size={16} /> : <Info size={16} />}
