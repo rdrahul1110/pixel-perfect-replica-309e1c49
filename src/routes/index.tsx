@@ -22,7 +22,18 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Exposure } from "@/components/nimbus-exposure";
 import { Decide } from "@/components/nimbus-decide";
 import { Ledger } from "@/components/nimbus-ledger";
-import { allocate, money, portfolios, type Scenario, type Stance } from "@/lib/nimbus";
+import {
+  allocate,
+  money,
+  portfolios,
+  type Scenario,
+  type Stance,
+  type DecisionSnapshot,
+  getStoredSnapshots,
+  saveDecisionSnapshot,
+  generateSnapshotId,
+  generatePayloadHash,
+} from "@/lib/nimbus";
 import { exportExcel, exportResolution, exportBRSRAndIFRS } from "@/lib/nimbus-exports";
 import { syncWithBackend, type SyncStatus, BACKEND_ENDPOINT } from "@/lib/api";
 
@@ -58,12 +69,22 @@ function NimbusCockpit() {
     "audit" | "compare" | "math" | "lock" | "notifications" | "backend" | null
   >(null);
   const [locked, setLocked] = useState(false);
+  const [snapshots, setSnapshots] = useState<DecisionSnapshot[]>([]);
+  const [lockedSnapshot, setLockedSnapshot] = useState<DecisionSnapshot | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     state: "idle",
     endpoint: BACKEND_ENDPOINT,
   });
+
+  useEffect(() => {
+    const stored = getStoredSnapshots();
+    setSnapshots(stored);
+    if (stored.length > 0) {
+      setLockedSnapshot(stored[0]);
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -133,14 +154,46 @@ function NimbusCockpit() {
     setBusy(true);
     try {
       await exportResolution(budget, stance, scenario);
+      const snapId = generateSnapshotId();
+      const plan = allocate(budget, stance, scenario);
+      const newSnapshot: DecisionSnapshot = {
+        id: snapId,
+        timestamp: new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }),
+        scenario,
+        stance,
+        budget,
+        cost: plan.cost,
+        idle: plan.idle,
+        retired: plan.retired,
+        residual: plan.residual,
+        mitigated: plan.mitigated,
+        net: plan.net,
+        fundedIds: plan.funded.map((x) => x.id),
+        fundedLabel: plan.label,
+        multiple: plan.cost > 0 ? (plan.retired / plan.cost).toFixed(2) + "x" : "0.00x",
+        sha256Hash: generatePayloadHash({ snapId, budget, stance, scenario, cost: plan.cost, retired: plan.retired }),
+        persona,
+      };
+      const updated = saveDecisionSnapshot(newSnapshot);
+      setSnapshots(updated);
+      setLockedSnapshot(newSnapshot);
       setLocked(true);
       setModal(null);
-      setNotice("Decision locked for this session. Board resolution downloaded.");
+      setNotice(`Decision locked as ${snapId} and recorded in the Audit Ledger.`);
     } catch {
       setNotice("The PDF download failed. Your decision has not been locked.");
     } finally {
       setBusy(false);
     }
+  };
+
+  const applySnapshot = (snap: DecisionSnapshot) => {
+    setBudget(snap.budget);
+    setStance(snap.stance);
+    setScenario(snap.scenario);
+    setLocked(true);
+    setLockedSnapshot(snap);
+    setNotice(`Synchronized cockpit to locked decision ${snap.id} (${money(snap.budget)} Cr).`);
   };
   return (
     <>
@@ -324,6 +377,9 @@ function NimbusCockpit() {
             stance={stance}
             scenario={scenario}
             locked={locked}
+            lockedSnapshot={lockedSnapshot}
+            snapshots={snapshots}
+            onApplySnapshot={applySnapshot}
             onExcel={() => void excel()}
             onBRSR={() => void brsrExport()}
             onPlanner={toPlanner}

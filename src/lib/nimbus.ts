@@ -42,6 +42,136 @@ export const projects = [
   },
 ] as const;
 export type Project = (typeof projects)[number];
+
+export type AuditDocument = {
+  id: string;
+  title: string;
+  docType: "EPC Turnkey Contract" | "Milestone Tax Invoice" | "Physical Site Inspection";
+  vendor: string;
+  amount: string;
+  date: string;
+  verifiedBy: string;
+  sha256Hash: string;
+  fileSize: string;
+  notes: string;
+};
+
+export const projectAuditEvidence: Record<string, AuditDocument[]> = {
+  P1: [
+    {
+      id: "DOC-P1-01",
+      title: "Solar EPC Master Turnkey Agreement",
+      docType: "EPC Turnkey Contract",
+      vendor: "Tata Power Solar Systems Ltd",
+      amount: "₹450.00 Cr (Committed)",
+      date: "14-Jul-2026",
+      verifiedBy: "Meera Iyer (Head ESG) & CFO Office",
+      sha256Hash: "8a4f91e2bc8041d8a1c902",
+      fileSize: "4.2 MB",
+      notes: "Board-approved turnkey contract for 120MW captive solar + Raipur kiln waste heat recovery system.",
+    },
+    {
+      id: "DOC-P1-02",
+      title: "Milestone 1 Tax Invoice (Civil Works & Inverters)",
+      docType: "Milestone Tax Invoice",
+      vendor: "Tata Power Solar Systems Ltd",
+      amount: "₹96.50 Cr (Disbursed)",
+      date: "28-Sep-2026",
+      verifiedBy: "Deloitte Statutory Audit Team",
+      sha256Hash: "7c3b29af18d99042e11108",
+      fileSize: "1.8 MB",
+      notes: "Invoice #TPS-2026-9041 cleared following delivery of 33kV substation switchgear and solar inverters.",
+    },
+    {
+      id: "DOC-P1-03",
+      title: "Physical Site Engineering Verification Certificate",
+      docType: "Physical Site Inspection",
+      vendor: "Nimbus Engineering Inspection Bureau",
+      amount: "42 MW Erected (35% Gate)",
+      date: "10-Nov-2026",
+      verifiedBy: "Rajesh Sharma (Raipur Plant General Manager)",
+      sha256Hash: "2f8a10d94ac1092e0ee41",
+      fileSize: "8.4 MB",
+      notes: "Drone-surveyed installation of module mounting structures and WHR heat-exchanger foundation civil works.",
+    },
+  ],
+  P2: [
+    {
+      id: "DOC-P2-01",
+      title: "Vertical Roller Mill (VRM) Supply & Erection Contract",
+      docType: "EPC Turnkey Contract",
+      vendor: "FLSmidth India Pvt Ltd",
+      amount: "₹280.00 Cr (Committed)",
+      date: "02-May-2026",
+      verifiedBy: "Procurement Committee & CFO",
+      sha256Hash: "5e1a89c42bd8901aa3412",
+      fileSize: "5.1 MB",
+      notes: "Contract for kiln conversion to dry slag grinding, eliminating 28-day dry season water shutdown risk.",
+    },
+    {
+      id: "DOC-P2-02",
+      title: "VRM Equipment Delivery & Customs Clearance Voucher",
+      docType: "Milestone Tax Invoice",
+      vendor: "FLSmidth India Pvt Ltd",
+      amount: "₹82.40 Cr (Disbursed)",
+      date: "19-Aug-2026",
+      verifiedBy: "Internal Audit & Plant Operations",
+      sha256Hash: "3b9f44a71cd0288bb1902",
+      fileSize: "2.3 MB",
+      notes: "Customs duty and port dispatch verification for heavy roller tires and drive gearbox at Gulbarga site.",
+    },
+    {
+      id: "DOC-P2-03",
+      title: "Slag Grinding Dry Run Inspection Sign-off",
+      docType: "Physical Site Inspection",
+      vendor: "Gulbarga Technical Review Cell",
+      amount: "Mechanical Gate Complete (48%)",
+      date: "04-Nov-2026",
+      verifiedBy: "K. Ramanathan (Gulbarga Plant Head)",
+      sha256Hash: "9d0a11e82ef4511ca8871",
+      fileSize: "3.7 MB",
+      notes: "Pre-commissioning vibration test passed on VRM foundation. Zero liquid discharge cooling verified.",
+    },
+  ],
+  P3: [
+    {
+      id: "DOC-P3-01",
+      title: "Clinker Silo Civil Construction & Slipform PO",
+      docType: "EPC Turnkey Contract",
+      vendor: "Larsen & Toubro Heavy Civil Infrastructure",
+      amount: "₹90.00 Cr (Committed)",
+      date: "18-Jan-2026",
+      verifiedBy: "Supply Chain Head & CFO",
+      sha256Hash: "1f8e77a90bc1294dd5518",
+      fileSize: "6.0 MB",
+      notes: "Construction of 3x 25,000-tonne clinker storage silos across Nagpur (P07), Solapur (P08), and Hubli (P09).",
+    },
+    {
+      id: "DOC-P3-02",
+      title: "P07 Nagpur Silo Civil Superstructure Milestone",
+      docType: "Milestone Tax Invoice",
+      vendor: "Larsen & Toubro Ltd",
+      amount: "₹38.20 Cr (Disbursed)",
+      date: "15-Sep-2026",
+      verifiedBy: "Statutory Audit Team",
+      sha256Hash: "6c2b19e48df1092cc7714",
+      fileSize: "1.9 MB",
+      notes: "Slipform pouring completed for 45m vertical concrete shell at Nagpur grinding unit.",
+    },
+    {
+      id: "DOC-P3-03",
+      title: "Conveyor Reclaimer Mechanical Integration Sign-off",
+      docType: "Physical Site Inspection",
+      vendor: "Nimbus Central Supply Logistics",
+      amount: "65% Buffer Operational",
+      date: "22-Oct-2026",
+      verifiedBy: "Anil Deshmukh (Nagpur Unit Head)",
+      sha256Hash: "4a7f02d18bc9910ee2219",
+      fileSize: "4.1 MB",
+      notes: "P07 clinker buffer expanded from 7 days to 20 days. Automated dust extraction commissioned.",
+    },
+  ],
+};
 export const grossFor = (scenario: Scenario, overrideGross?: number) =>
   overrideGross ??
   (scenario === "2026 Baseline" ? 688 : scenario === "2040 Trajectory" ? 1515 : 2655);
@@ -303,4 +433,77 @@ export function floodShock(days = 14, buffer = 7) {
     downtime: Math.max(0, days - buffer),
     loss: Math.round(((Math.max(0, days - buffer) * 18.6) / 7) * 10) / 10,
   };
+}
+
+export type DecisionSnapshot = {
+  id: string; // SNAP-YYYYMMDD-HHMMSS
+  timestamp: string;
+  scenario: Scenario;
+  stance: Stance;
+  budget: number;
+  cost: number;
+  idle: number;
+  retired: number;
+  residual: number;
+  mitigated: number;
+  net: number;
+  fundedIds: string[];
+  fundedLabel: string;
+  multiple: string;
+  sha256Hash: string;
+  persona: string;
+};
+
+export const SNAPSHOTS_STORAGE_KEY = "nimbus_locked_snapshots";
+
+export function getStoredSnapshots(): DecisionSnapshot[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(SNAPSHOTS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveDecisionSnapshot(snapshot: DecisionSnapshot): DecisionSnapshot[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const existing = getStoredSnapshots();
+    const updated = [snapshot, ...existing.filter((s) => s.id !== snapshot.id)];
+    localStorage.setItem(SNAPSHOTS_STORAGE_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return [];
+  }
+}
+
+export function clearStoredSnapshots(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(SNAPSHOTS_STORAGE_KEY);
+  } catch {}
+}
+
+export function generateSnapshotId(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const mm = pad(d.getMonth() + 1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const min = pad(d.getMinutes());
+  const ss = pad(d.getSeconds());
+  return `SNAP-${yyyy}${mm}${dd}-${hh}${min}${ss}`;
+}
+
+export function generatePayloadHash(payload: object): string {
+  const str = JSON.stringify(payload);
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  const hex = Math.abs(hash).toString(16).padStart(8, "0");
+  return `sha256-${hex}x${Date.now().toString(16).slice(-4)}`;
 }
